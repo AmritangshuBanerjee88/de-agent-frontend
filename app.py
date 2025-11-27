@@ -335,73 +335,57 @@ def get_stats():
 # AGENT ACTIVITY VISUALIZATION
 # ===========================================
 def render_agent_activity(agent_steps: list, is_complete: bool = True):
-    """Render the real-time agent activity panel."""
+    """Render the real-time agent activity panel using Streamlit components."""
     
     if not agent_steps:
         return
     
-    # Create the panel
+    # Use an expander for the agent activity
+    status_emoji = "✅" if is_complete else "🔄"
     status_text = "Complete" if is_complete else "Processing..."
-    status_class = "#00ff88" if is_complete else "#ffcc00"
     
-    html = f"""
-    <div class="agent-panel">
-        <div class="agent-panel-header">
-            <span>🤖 AGENT ACTIVITY</span>
-            <span style="color: {status_class};">
-                {'<span class="live-indicator"></span>' if not is_complete else '✓'} {status_text}
-            </span>
-        </div>
-    """
-    
-    for step in agent_steps:
-        status = step.get("status", "completed")
-        icon = step.get("agent_icon", "🔹")
-        agent = step.get("agent", "Agent")
-        action = step.get("action", "Processing")
-        details = step.get("details", [])
+    with st.expander(f"🤖 Agent Activity {status_emoji} {status_text}", expanded=True):
         
-        # Status styling
-        if status == "completed":
-            status_icon = "✅"
-            status_class = "agent-step-completed"
-        elif status == "running":
-            status_icon = "🔄"
-            status_class = "agent-step-running"
-        elif status == "error":
-            status_icon = "❌"
-            status_class = "agent-step-error"
-        else:
-            status_icon = "⏳"
-            status_class = "agent-step-waiting"
+        # Progress bar at top
+        total_steps = len(agent_steps)
+        completed = sum(1 for s in agent_steps if s.get("status") == "completed")
+        progress = completed / total_steps if total_steps > 0 else 0
         
-        html += f"""
-        <div class="agent-step {status_class}">
-            <div class="agent-name">{status_icon} {icon} {agent}</div>
-            <div class="agent-action">└─ {action}</div>
-        """
+        st.progress(progress, text=f"{completed}/{total_steps} steps completed")
         
-        for detail in details[:4]:  # Show max 4 details
-            html += f'<div class="agent-detail">   └─ {detail}</div>'
+        st.markdown("---")
         
-        html += "</div>"
-    
-    # Progress bar
-    total_steps = len(agent_steps)
-    completed = sum(1 for s in agent_steps if s.get("status") == "completed")
-    progress = (completed / total_steps * 100) if total_steps > 0 else 0
-    
-    html += f"""
-        <div class="progress-container">
-            <div class="progress-bar" style="width: {progress}%;"></div>
-        </div>
-        <div style="text-align: center; color: #888; font-size: 0.75rem;">
-            {completed}/{total_steps} steps completed
-        </div>
-    </div>
-    """
-    
-    st.markdown(html, unsafe_allow_html=True)
+        # Render each step
+        for step in agent_steps:
+            status = step.get("status", "completed")
+            icon = step.get("agent_icon", "🔹")
+            agent = step.get("agent", "Agent")
+            action = step.get("action", "Processing")
+            details = step.get("details", [])
+            
+            # Status icon
+            if status == "completed":
+                status_icon = "✅"
+                color = "green"
+            elif status == "running":
+                status_icon = "🔄"
+                color = "orange"
+            elif status == "error":
+                status_icon = "❌"
+                color = "red"
+            else:
+                status_icon = "⏳"
+                color = "gray"
+            
+            # Agent header
+            st.markdown(f"**{status_icon} {icon} {agent}**")
+            st.markdown(f"<small style='color: gray; margin-left: 20px;'>└─ {action}</small>", unsafe_allow_html=True)
+            
+            # Details
+            for detail in details[:4]:
+                st.markdown(f"<small style='color: #888; margin-left: 40px;'>└─ {detail}</small>", unsafe_allow_html=True)
+            
+            st.markdown("")  # Spacing
 
 # ===========================================
 # MAIN APPLICATION
